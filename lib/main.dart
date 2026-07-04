@@ -6,7 +6,6 @@ import 'core/routes/app_routes.dart';
 import 'core/constants/supabase_constants.dart';
 
 void main() {
-  // 1. تشغيل المحرك فوراً لضمان سيطرة فلاتر على الشاشة وإخفاء لوادر الـ HTML
   WidgetsFlutterBinding.ensureInitialized();
   
   runApp(
