@@ -5,46 +5,69 @@ import 'core/theme/app_theme.dart';
 import 'core/routes/app_routes.dart';
 import 'core/constants/supabase_constants.dart';
 
-void main() async {
-  // 1. ضمان تهيئة محرك فلاتر
+void main() {
+  // 1. تشغيل المحرك فوراً لضمان سيطرة فلاتر على الشاشة وإخفاء لوادر الـ HTML
   WidgetsFlutterBinding.ensureInitialized();
   
-  String? initError;
-  
-  try {
-    // 2. تنظيف الروابط
-    final url = SupabaseConstants.url.replaceAll('"', '').replaceAll("'", "").trim();
-    final key = SupabaseConstants.anonKey.replaceAll('"', '').replaceAll("'", "").trim();
-
-    if (url.isEmpty || !url.startsWith('http')) {
-      throw 'رابط Supabase غير صحيح. تأكد من إعدادات البيئة (Environment Variables).';
-    }
-
-    // 3. التهيئة قبل تشغيل الواجهة لضمان عدم حدوث Null Check Error
-    await Supabase.initialize(
-      url: url,
-      anonKey: key,
-      debug: true,
-    );
-  } catch (e) {
-    initError = e.toString();
-  }
-
   runApp(
-    ProviderScope(
-      child: MaintenanceCenterApp(error: initError),
+    const ProviderScope(
+      child: MaintenanceCenterApp(),
     ),
   );
 }
 
-class MaintenanceCenterApp extends StatelessWidget {
-  final String? error;
-  const MaintenanceCenterApp({super.key, this.error});
+class MaintenanceCenterApp extends StatefulWidget {
+  const MaintenanceCenterApp({super.key});
+
+  @override
+  State<MaintenanceCenterApp> createState() => _MaintenanceCenterAppState();
+}
+
+class _MaintenanceCenterAppState extends State<MaintenanceCenterApp> {
+  bool _isInitialized = false;
+  String? _initError;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSystem();
+  }
+
+  Future<void> _initSystem() async {
+    try {
+      setState(() {
+        _initError = null;
+        _isInitialized = false;
+      });
+
+      // تنظيف المتغيرات من أي علامات تنصيص زائدة
+      final url = SupabaseConstants.url.replaceAll('"', '').replaceAll("'", "").trim();
+      final key = SupabaseConstants.anonKey.replaceAll('"', '').replaceAll("'", "").trim();
+
+      if (url.isEmpty || key.isEmpty) {
+        throw 'مفاتيح الربط (API Keys) مفقودة. يرجى التأكد من إضافتها في Vercel.';
+      }
+
+      // تهيئة سوبابيس داخل واجهة فلاتر باستخدام المسمى الجديد
+      await Supabase.initialize(
+        url: url, 
+        anonKey: key, // استخدام anonKey تماشياً مع التحديثات الأخيرة
+      );
+
+      if (mounted) {
+        setState(() => _isInitialized = true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _initError = e.toString());
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // عرض شاشة خطأ واضحة إذا فشلت التهيئة
-    if (error != null) {
+    // شاشة عرض الأخطاء بأسلوب مركز الصيانة
+    if (_initError != null) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
@@ -55,11 +78,18 @@ class MaintenanceCenterApp extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 70),
+                  const Icon(Icons.cloud_off, color: Colors.red, size: 70),
                   const SizedBox(height: 20),
-                  const Text('خطأ في تهيئة النظام', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  const Text('تعذر الاتصال بمركز البيانات', 
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
-                  Text(error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+                  Text(_initError!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 30),
+                  ElevatedButton(
+                    onPressed: _initSystem,
+                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15)),
+                    child: const Text('إعادة المحاولة'),
+                  ),
                 ],
               ),
             ),
@@ -68,6 +98,28 @@ class MaintenanceCenterApp extends StatelessWidget {
       );
     }
 
+    // شاشة انتظار داخل فلاتر (تضمن اختفاء شاشة الـ HTML فوراً)
+    if (!_isInitialized) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        home: const Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 25),
+                Text('جاري تهيئة مركز الصيانة...', 
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // تشغيل السيستم الحقيقي
     return const RepairSystemMain();
   }
 }
@@ -77,7 +129,6 @@ class RepairSystemMain extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // الـ Router لن يعمل إلا بعد أن تكون سوبابيس جاهزة تماماً
     final router = ref.watch(routerProvider);
     
     return MaterialApp.router(
