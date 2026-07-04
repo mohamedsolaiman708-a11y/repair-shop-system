@@ -1,0 +1,2 @@
+# اجعل فيرسل يرفع مجلد الـ build حتى لو كان في الـ gitignore
+!build/web

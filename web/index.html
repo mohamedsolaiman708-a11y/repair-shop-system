@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Repair Management System">
+  <title>Repair System</title>
+  <link rel="manifest" href="manifest.json">
+  
+  <style>
+    body { background-color: #f3f4f6; margin: 0; padding: 0; overflow: hidden; }
+    #loading-indicator {
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh; flex-direction: column; font-family: sans-serif;
+    }
+    .spinner {
+      width: 40px; height: 40px; border: 4px solid #ddd;
+      border-top: 4px solid #6366F1; border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #status-text { margin-top: 20px; color: #666; font-size: 14px; direction: rtl; }
+  </style>
+</head>
+<body>
+  <div id="loading-indicator">
+    <div class="spinner"></div>
+    <h3 style="margin-top:20px;color:#444;direction:rtl;">جاري تشغيل النظام...</h3>
+    <div id="status-text">جاري تهيئة المحرك...</div>
+  </div>
+
+  <!-- الطريقة الرسمية الوحيدة لضمان عمل Flutter 3.10 -->
+  <script src="flutter.js" defer></script>
+  <script>
+    window.addEventListener('load', function(ev) {
+      // الانتظار حتى يتم تحميل flutter.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: { serviceWorkerVersion: null },
+        onEntrypointLoaded: function(engineInitializer) {
+          document.getElementById('status-text').innerText = 'جاري تحضير الرسوميات...';
+          engineInitializer.initializeEngine({
+            renderer: "html",
+            useColorEmoji: true
+          }).then(function(appRunner) {
+            document.getElementById('status-text').innerText = 'بدء التطبيق...';
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+
+    // إخفاء اللودينج عند ظهور أول فريم
+    window.addEventListener('flutter-first-frame', function() {
+      var loader = document.getElementById('loading-indicator');
+      if (loader) loader.remove();
+    });
+  </script>
+</body>
+</html>
