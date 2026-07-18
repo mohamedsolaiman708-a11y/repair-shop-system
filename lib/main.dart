@@ -97,7 +97,6 @@ class _MaintenanceCenterAppState extends State<MaintenanceCenterApp> {
       );
     }
 
-    // شاشة انتظار داخل فلاتر (تضمن اختفاء شاشة الـ HTML فوراً)
     if (!_isInitialized) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
